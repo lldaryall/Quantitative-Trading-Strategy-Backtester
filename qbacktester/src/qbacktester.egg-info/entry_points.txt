@@ -1,0 +1,3 @@
+[console_scripts]
+qbacktester = qbacktester.cli:main
+qbt = qbacktester.cli:main
