@@ -13,17 +13,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: |
-        # No dependencies needed for static site
-        echo "Static site - no dependencies to install"
         
     - name: Validate HTML
       run: |
@@ -33,14 +22,6 @@ jobs:
         else
           echo "HTML Tidy not available, skipping validation"
         fi
-        
-    - name: Check for broken links
-      run: |
-        # Install link checker
-        npm install -g broken-link-checker
-        
-        # Check for broken internal links
-        blc http://localhost:8000 -ro --exclude-external || true
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
