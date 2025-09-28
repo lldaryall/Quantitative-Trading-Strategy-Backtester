@@ -5,8 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (hamburger && navMenu) {
         hamburger.addEventListener('click', function() {
+            const isExpanded = navMenu.classList.contains('active');
             navMenu.classList.toggle('active');
             hamburger.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', !isExpanded);
         });
     }
     
@@ -16,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         link.addEventListener('click', () => {
             navMenu.classList.remove('active');
             hamburger.classList.remove('active');
+            hamburger.setAttribute('aria-expanded', 'false');
         });
     });
     
@@ -24,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!hamburger.contains(event.target) && !navMenu.contains(event.target)) {
             navMenu.classList.remove('active');
             hamburger.classList.remove('active');
+            hamburger.setAttribute('aria-expanded', 'false');
         }
     });
 });
@@ -413,5 +417,355 @@ window.addEventListener('load', function() {
         });
         
         observer.observe({ entryTypes: ['largest-contentful-paint'] });
+    }
+});
+
+// Interactive Backtester Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const backtestForm = document.getElementById('backtest-form');
+    const resultsDiv = document.getElementById('backtester-results');
+    const metricsGrid = document.getElementById('metrics-grid');
+    const tradesTable = document.getElementById('trades-table');
+    const runButton = document.getElementById('run-backtest');
+    const loadDemoButton = document.getElementById('load-demo');
+    const exportButton = document.getElementById('export-results');
+    
+    let currentChart = null;
+    let currentResults = null;
+    
+    // Demo data for quick testing
+    const demoData = {
+        'AAPL': {
+            symbol: 'AAPL',
+            startDate: '2020-01-01',
+            endDate: '2023-12-31',
+            fastWindow: 20,
+            slowWindow: 50,
+            initialCapital: 100000,
+            commission: 1.0,
+            slippage: 0.5
+        },
+        'SPY': {
+            symbol: 'SPY',
+            startDate: '2018-01-01',
+            endDate: '2023-12-31',
+            fastWindow: 15,
+            slowWindow: 45,
+            initialCapital: 50000,
+            commission: 0.5,
+            slippage: 0.25
+        },
+        'MSFT': {
+            symbol: 'MSFT',
+            startDate: '2019-01-01',
+            endDate: '2023-12-31',
+            fastWindow: 25,
+            slowWindow: 75,
+            initialCapital: 75000,
+            commission: 1.5,
+            slippage: 0.75
+        }
+    };
+    
+    // Load demo data
+    loadDemoButton.addEventListener('click', function() {
+        const symbols = Object.keys(demoData);
+        const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+        const demo = demoData[randomSymbol];
+        
+        document.getElementById('symbol').value = demo.symbol;
+        document.getElementById('start-date').value = demo.startDate;
+        document.getElementById('end-date').value = demo.endDate;
+        document.getElementById('fast-window').value = demo.fastWindow;
+        document.getElementById('slow-window').value = demo.slowWindow;
+        document.getElementById('initial-capital').value = demo.initialCapital;
+        document.getElementById('commission').value = demo.commission;
+        document.getElementById('slippage').value = demo.slippage;
+        
+        trackEvent('demo_loaded', { symbol: demo.symbol });
+    });
+    
+    // Form submission
+    backtestForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        runBacktest();
+    });
+    
+    // Export results
+    exportButton.addEventListener('click', function() {
+        if (currentResults) {
+            exportResults(currentResults);
+        }
+    });
+    
+    function runBacktest() {
+        const formData = new FormData(backtestForm);
+        const params = {
+            symbol: formData.get('symbol').toUpperCase(),
+            startDate: formData.get('start-date'),
+            endDate: formData.get('end-date'),
+            fastWindow: parseInt(formData.get('fast-window')),
+            slowWindow: parseInt(formData.get('slow-window')),
+            initialCapital: parseFloat(formData.get('initial-capital')),
+            commission: parseFloat(formData.get('commission')),
+            slippage: parseFloat(formData.get('slippage'))
+        };
+        
+        // Validate parameters
+        if (params.fastWindow >= params.slowWindow) {
+            alert('Fast window must be less than slow window');
+            return;
+        }
+        
+        if (params.startDate >= params.endDate) {
+            alert('Start date must be before end date');
+            return;
+        }
+        
+        // Show loading state
+        runButton.disabled = true;
+        runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+        
+        // Simulate backtest (in real implementation, this would call your Python backend)
+        setTimeout(() => {
+            const results = simulateBacktest(params);
+            displayResults(results);
+            runButton.disabled = false;
+            runButton.innerHTML = '<i class="fas fa-play"></i> Run Backtest';
+            
+            trackEvent('backtest_completed', {
+                symbol: params.symbol,
+                fast_window: params.fastWindow,
+                slow_window: params.slowWindow
+            });
+        }, 2000);
+    }
+    
+    function simulateBacktest(params) {
+        // This is a simulation - in real implementation, call your Python backend
+        const days = Math.floor((new Date(params.endDate) - new Date(params.startDate)) / (1000 * 60 * 60 * 24));
+        const trades = Math.floor(days / 30) + Math.floor(Math.random() * 10);
+        
+        // Generate realistic results
+        const totalReturn = (Math.random() - 0.3) * 100; // -30% to +70%
+        const sharpeRatio = Math.random() * 2 - 0.5; // -0.5 to 1.5
+        const maxDrawdown = -Math.random() * 25; // 0 to -25%
+        const winRate = Math.random() * 40 + 40; // 40% to 80%
+        
+        const finalCapital = params.initialCapital * (1 + totalReturn / 100);
+        const totalTrades = trades;
+        const avgWin = Math.random() * 5 + 2; // 2% to 7%
+        const avgLoss = -Math.random() * 3 - 1; // -1% to -4%
+        
+        // Generate equity curve data
+        const equityData = [];
+        const dates = [];
+        let currentEquity = params.initialCapital;
+        
+        for (let i = 0; i < days; i += 5) { // Sample every 5 days
+            const date = new Date(params.startDate);
+            date.setDate(date.getDate() + i);
+            dates.push(date.toISOString().split('T')[0]);
+            
+            // Add some realistic volatility
+            const change = (Math.random() - 0.5) * 0.02;
+            currentEquity *= (1 + change);
+            equityData.push(currentEquity);
+        }
+        
+        // Generate trade history
+        const tradeHistory = [];
+        for (let i = 0; i < Math.min(totalTrades, 20); i++) {
+            const tradeDate = new Date(params.startDate);
+            tradeDate.setDate(tradeDate.getDate() + Math.floor(Math.random() * days));
+            
+            const isWin = Math.random() < (winRate / 100);
+            const pnl = isWin ? 
+                (Math.random() * 5 + 1) : 
+                -(Math.random() * 3 + 1);
+            
+            tradeHistory.push({
+                date: tradeDate.toISOString().split('T')[0],
+                action: Math.random() > 0.5 ? 'BUY' : 'SELL',
+                price: 100 + Math.random() * 200,
+                quantity: Math.floor(Math.random() * 100) + 10,
+                pnl: pnl,
+                isWin: isWin
+            });
+        }
+        
+        return {
+            ...params,
+            totalReturn: totalReturn,
+            sharpeRatio: sharpeRatio,
+            maxDrawdown: maxDrawdown,
+            winRate: winRate,
+            finalCapital: finalCapital,
+            totalTrades: totalTrades,
+            avgWin: avgWin,
+            avgLoss: avgLoss,
+            cagr: (Math.pow(finalCapital / params.initialCapital, 365 / days) - 1) * 100,
+            volatility: Math.random() * 20 + 10,
+            calmarRatio: Math.abs(totalReturn / maxDrawdown),
+            sortinoRatio: Math.random() * 1.5 + 0.5,
+            equityData: equityData,
+            dates: dates,
+            tradeHistory: tradeHistory
+        };
+    }
+    
+    function displayResults(results) {
+        currentResults = results;
+        
+        // Show results section
+        resultsDiv.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        
+        // Display metrics
+        displayMetrics(results);
+        
+        // Create chart
+        createChart(results);
+        
+        // Display trade history
+        displayTradeHistory(results.tradeHistory);
+    }
+    
+    function displayMetrics(results) {
+        const metrics = [
+            { label: 'Total Return', value: `${results.totalReturn.toFixed(2)}%`, class: results.totalReturn >= 0 ? 'positive' : 'negative' },
+            { label: 'CAGR', value: `${results.cagr.toFixed(2)}%`, class: results.cagr >= 0 ? 'positive' : 'negative' },
+            { label: 'Sharpe Ratio', value: results.sharpeRatio.toFixed(2), class: 'neutral' },
+            { label: 'Max Drawdown', value: `${results.maxDrawdown.toFixed(2)}%`, class: 'negative' },
+            { label: 'Win Rate', value: `${results.winRate.toFixed(1)}%`, class: 'neutral' },
+            { label: 'Total Trades', value: results.totalTrades.toString(), class: 'neutral' },
+            { label: 'Final Capital', value: `$${results.finalCapital.toLocaleString()}`, class: results.finalCapital >= results.initialCapital ? 'positive' : 'negative' },
+            { label: 'Volatility', value: `${results.volatility.toFixed(1)}%`, class: 'neutral' }
+        ];
+        
+        metricsGrid.innerHTML = metrics.map(metric => `
+            <div class="metric-card">
+                <div class="metric-label">${metric.label}</div>
+                <div class="metric-value ${metric.class}">${metric.value}</div>
+            </div>
+        `).join('');
+    }
+    
+    function createChart(results) {
+        const ctx = document.getElementById('equity-chart').getContext('2d');
+        
+        if (currentChart) {
+            currentChart.destroy();
+        }
+        
+        currentChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: results.dates,
+                datasets: [{
+                    label: 'Portfolio Value',
+                    data: results.equityData,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${results.symbol} Moving Average Strategy (${results.fastWindow}/${results.slowWindow})`
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month'
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function displayTradeHistory(trades) {
+        const tableHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Action</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>P&L</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${trades.map(trade => `
+                        <tr>
+                            <td>${trade.date}</td>
+                            <td>${trade.action}</td>
+                            <td>$${trade.price.toFixed(2)}</td>
+                            <td>${trade.quantity}</td>
+                            <td class="${trade.pnl >= 0 ? 'positive' : 'negative'}">${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}%</td>
+                            <td>
+                                <span class="trade-result ${trade.isWin ? 'win' : 'loss'}">
+                                    ${trade.isWin ? '✓' : '✗'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        
+        tradesTable.innerHTML = tableHTML;
+    }
+    
+    function exportResults(results) {
+        const csvContent = [
+            ['Metric', 'Value'],
+            ['Symbol', results.symbol],
+            ['Start Date', results.startDate],
+            ['End Date', results.endDate],
+            ['Fast Window', results.fastWindow],
+            ['Slow Window', results.slowWindow],
+            ['Initial Capital', results.initialCapital],
+            ['Total Return', `${results.totalReturn.toFixed(2)}%`],
+            ['CAGR', `${results.cagr.toFixed(2)}%`],
+            ['Sharpe Ratio', results.sharpeRatio.toFixed(2)],
+            ['Max Drawdown', `${results.maxDrawdown.toFixed(2)}%`],
+            ['Win Rate', `${results.winRate.toFixed(1)}%`],
+            ['Total Trades', results.totalTrades],
+            ['Final Capital', results.finalCapital],
+            ['Volatility', `${results.volatility.toFixed(1)}%`]
+        ].map(row => row.join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backtest_${results.symbol}_${results.startDate}_${results.endDate}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        trackEvent('results_exported', { symbol: results.symbol });
     }
 });

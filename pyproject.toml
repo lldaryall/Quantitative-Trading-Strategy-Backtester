@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Darya Pylypenko", email = "daryapylypenko@example.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -47,9 +47,9 @@ qbacktester = "qbacktester.cli:main"
 qbt = "qbacktester.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/qbacktester"
-Repository = "https://github.com/yourusername/qbacktester"
-Issues = "https://github.com/yourusername/qbacktester/issues"
+Homepage = "https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester"
+Repository = "https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester"
+Issues = "https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -9,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -18,20 +19,21 @@
                 <i class="fas fa-chart-line"></i>
                 <span>QBacktester</span>
             </div>
-            <div class="nav-menu" id="nav-menu">
+            <div class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#quickstart" class="nav-link">Quick Start</a>
+                <a href="#backtester" class="nav-link">Backtester</a>
                 <a href="#examples" class="nav-link">Examples</a>
                 <a href="#documentation" class="nav-link">Docs</a>
-                <a href="https://github.com/yourusername/qbacktester" class="nav-link" target="_blank">
+                <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester" class="nav-link" target="_blank">
                     <i class="fab fa-github"></i> GitHub
                 </a>
             </div>
-            <div class="hamburger" id="hamburger">
+            <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
                 <span class="bar"></span>
                 <span class="bar"></span>
                 <span class="bar"></span>
-            </div>
+            </button>
         </div>
     </nav>
 
@@ -70,7 +72,7 @@
                         <i class="fas fa-play"></i>
                         Get Started
                     </a>
-                    <a href="https://github.com/yourusername/qbacktester" class="btn btn-secondary" target="_blank">
+                    <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester" class="btn btn-secondary" target="_blank">
                         <i class="fab fa-github"></i>
                         View on GitHub
                     </a>
@@ -273,6 +275,91 @@ print(f"Sharpe Ratio: {results['sharpe_ratio']:.2f}")</code></pre>
         </div>
     </section>
 
+    <!-- Interactive Backtester Section -->
+    <section id="backtester" class="backtester">
+        <div class="container">
+            <div class="section-header">
+                <h2>Interactive Backtester</h2>
+                <p>Run your own backtests with real-time results and visualizations</p>
+            </div>
+            <div class="backtester-content">
+                <div class="backtester-form">
+                    <form id="backtest-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="symbol">Stock Symbol</label>
+                                <input type="text" id="symbol" name="symbol" value="AAPL" placeholder="e.g., AAPL, SPY, MSFT" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="start-date">Start Date</label>
+                                <input type="date" id="start-date" name="start-date" value="2020-01-01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="end-date">End Date</label>
+                                <input type="date" id="end-date" name="end-date" value="2023-12-31" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="fast-window">Fast SMA Window</label>
+                                <input type="number" id="fast-window" name="fast-window" value="20" min="1" max="200" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="slow-window">Slow SMA Window</label>
+                                <input type="number" id="slow-window" name="slow-window" value="50" min="1" max="500" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="initial-capital">Initial Capital ($)</label>
+                                <input type="number" id="initial-capital" name="initial-capital" value="100000" min="1000" step="1000" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="commission">Commission (bps)</label>
+                                <input type="number" id="commission" name="commission" value="1.0" min="0" max="100" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="slippage">Slippage (bps)</label>
+                                <input type="number" id="slippage" name="slippage" value="0.5" min="0" max="100" step="0.1">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="run-backtest">
+                                <i class="fas fa-play"></i>
+                                Run Backtest
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="load-demo">
+                                <i class="fas fa-download"></i>
+                                Load Demo Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="backtester-results" id="backtester-results" style="display: none;">
+                    <div class="results-header">
+                        <h3>Backtest Results</h3>
+                        <div class="results-actions">
+                            <button class="btn btn-secondary" id="export-results">
+                                <i class="fas fa-download"></i>
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="results-content">
+                        <div class="metrics-grid" id="metrics-grid">
+                            <!-- Metrics will be populated by JavaScript -->
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="equity-chart" width="800" height="400"></canvas>
+                        </div>
+                        <div class="trades-table-container">
+                            <h4>Trade History</h4>
+                            <div class="trades-table" id="trades-table">
+                                <!-- Trade table will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Examples Section -->
     <section id="examples" class="examples">
         <div class="container">
@@ -405,28 +492,28 @@ print(f"Sharpe Ratio: {results['sharpe_ratio']:.2f}")</code></pre>
                 <p>Comprehensive guides and API reference</p>
             </div>
             <div class="docs-grid">
-                <a href="#" class="doc-card">
+                <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/blob/main/README.md" class="doc-card" target="_blank">
                     <div class="doc-icon">
                         <i class="fas fa-book"></i>
                     </div>
                     <h3>User Guide</h3>
                     <p>Complete guide to using QBacktester for strategy development and backtesting.</p>
                 </a>
-                <a href="#" class="doc-card">
+                <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/tree/main/src/qbacktester" class="doc-card" target="_blank">
                     <div class="doc-icon">
                         <i class="fas fa-code"></i>
                     </div>
                     <h3>API Reference</h3>
                     <p>Detailed documentation of all classes, methods, and functions.</p>
                 </a>
-                <a href="#" class="doc-card">
+                <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/tree/main/notebooks" class="doc-card" target="_blank">
                     <div class="doc-icon">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
                     <h3>Tutorials</h3>
                     <p>Step-by-step tutorials for common use cases and advanced techniques.</p>
                 </a>
-                <a href="#" class="doc-card">
+                <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/issues" class="doc-card" target="_blank">
                     <div class="doc-icon">
                         <i class="fas fa-question-circle"></i>
                     </div>
@@ -448,13 +535,13 @@ print(f"Sharpe Ratio: {results['sharpe_ratio']:.2f}")</code></pre>
                     </div>
                     <p>A powerful Python library for quantitative backtesting with comprehensive performance analysis and visualization tools.</p>
                     <div class="footer-social">
-                        <a href="https://github.com/yourusername/qbacktester" target="_blank">
+                        <a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester" target="_blank">
                             <i class="fab fa-github"></i>
                         </a>
-                        <a href="#" target="_blank">
+                        <a href="https://twitter.com/daryapylypenko" target="_blank" aria-label="Follow on Twitter">
                             <i class="fab fa-twitter"></i>
                         </a>
-                        <a href="#" target="_blank">
+                        <a href="https://linkedin.com/in/daryapylypenko" target="_blank" aria-label="Connect on LinkedIn">
                             <i class="fab fa-linkedin"></i>
                         </a>
                     </div>
@@ -471,10 +558,10 @@ print(f"Sharpe Ratio: {results['sharpe_ratio']:.2f}")</code></pre>
                 <div class="footer-section">
                     <h4>Resources</h4>
                     <ul>
-                        <li><a href="https://github.com/yourusername/qbacktester">GitHub Repository</a></li>
-                        <li><a href="https://github.com/yourusername/qbacktester/issues">Issue Tracker</a></li>
-                        <li><a href="https://github.com/yourusername/qbacktester/releases">Releases</a></li>
-                        <li><a href="https://github.com/yourusername/qbacktester/blob/main/LICENSE">License</a></li>
+                        <li><a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester">GitHub Repository</a></li>
+                        <li><a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/issues">Issue Tracker</a></li>
+                        <li><a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/releases">Releases</a></li>
+                        <li><a href="https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester/blob/main/LICENSE">License</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
