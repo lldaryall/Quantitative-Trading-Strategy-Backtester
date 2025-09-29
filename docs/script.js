@@ -502,22 +502,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(backtestForm);
         const params = {
             symbol: formData.get('symbol').toUpperCase(),
-            startDate: formData.get('start-date'),
-            endDate: formData.get('end-date'),
-            fastWindow: parseInt(formData.get('fast-window')),
-            slowWindow: parseInt(formData.get('slow-window')),
-            initialCapital: parseFloat(formData.get('initial-capital')),
+            start_date: formData.get('start-date'),
+            end_date: formData.get('end-date'),
+            fast_window: parseInt(formData.get('fast-window')),
+            slow_window: parseInt(formData.get('slow-window')),
+            initial_capital: parseFloat(formData.get('initial-capital')),
             commission: parseFloat(formData.get('commission')),
             slippage: parseFloat(formData.get('slippage'))
         };
         
         // Validate parameters
-        if (params.fastWindow >= params.slowWindow) {
+        if (params.fast_window >= params.slow_window) {
             alert('Fast window must be less than slow window');
             return;
         }
         
-        if (params.startDate >= params.endDate) {
+        if (params.start_date >= params.end_date) {
             alert('Start date must be before end date');
             return;
         }
@@ -526,19 +526,42 @@ document.addEventListener('DOMContentLoaded', function() {
         runButton.disabled = true;
         runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
         
-        // Simulate backtest (in real implementation, this would call your Python backend)
-        setTimeout(() => {
-            const results = simulateBacktest(params);
-            displayResults(results);
+        // Call the real backend API
+        fetch('http://localhost:5000/api/backtest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(params)
+        })
+        .then(response => response.json())
+        .then(data => {
             runButton.disabled = false;
             runButton.innerHTML = '<i class="fas fa-play"></i> Run Backtest';
             
-            trackEvent('backtest_completed', {
-                symbol: params.symbol,
-                fast_window: params.fastWindow,
-                slow_window: params.slowWindow
-            });
-        }, 2000);
+            if (data.success) {
+                displayResults(data);
+                trackEvent('backtest_completed', {
+                    symbol: params.symbol,
+                    fast_window: params.fast_window,
+                    slow_window: params.slow_window
+                });
+            } else {
+                alert(`Backtest failed: ${data.error}`);
+                console.error('Backtest error:', data);
+            }
+        })
+        .catch(error => {
+            runButton.disabled = false;
+            runButton.innerHTML = '<i class="fas fa-play"></i> Run Backtest';
+            alert(`Error connecting to backend: ${error.message}`);
+            console.error('Network error:', error);
+            
+            // Fallback to simulation if backend is not available
+            console.log('Falling back to simulation mode...');
+            const results = simulateBacktest(params);
+            displayResults(results);
+        });
     }
     
     function simulateBacktest(params) {
@@ -628,22 +651,33 @@ document.addEventListener('DOMContentLoaded', function() {
         createChart(results);
         
         // Display trade history
-        displayTradeHistory(results.tradeHistory);
+        displayTradeHistory(results.trade_history || results.tradeHistory);
+        
+        // Display plots if available
+        if (results.plots) {
+            displayPlots(results.plots);
+        }
     }
     
     function displayMetrics(results) {
-        const metrics = [
-            { label: 'Total Return', value: `${results.totalReturn.toFixed(2)}%`, class: results.totalReturn >= 0 ? 'positive' : 'negative' },
-            { label: 'CAGR', value: `${results.cagr.toFixed(2)}%`, class: results.cagr >= 0 ? 'positive' : 'negative' },
-            { label: 'Sharpe Ratio', value: results.sharpeRatio.toFixed(2), class: 'neutral' },
-            { label: 'Max Drawdown', value: `${results.maxDrawdown.toFixed(2)}%`, class: 'negative' },
-            { label: 'Win Rate', value: `${results.winRate.toFixed(1)}%`, class: 'neutral' },
-            { label: 'Total Trades', value: results.totalTrades.toString(), class: 'neutral' },
-            { label: 'Final Capital', value: `$${results.finalCapital.toLocaleString()}`, class: results.finalCapital >= results.initialCapital ? 'positive' : 'negative' },
-            { label: 'Volatility', value: `${results.volatility.toFixed(1)}%`, class: 'neutral' }
+        // Handle both real backend data and simulated data
+        const metrics = results.metrics ? results.metrics : results;
+        
+        const metricCards = [
+            { label: 'Total Return', value: `${(metrics.total_return || metrics.totalReturn || 0).toFixed(2)}%`, 
+              class: (metrics.total_return || metrics.totalReturn || 0) >= 0 ? 'positive' : 'negative' },
+            { label: 'CAGR', value: `${(metrics.cagr || 0).toFixed(2)}%`, 
+              class: (metrics.cagr || 0) >= 0 ? 'positive' : 'negative' },
+            { label: 'Sharpe Ratio', value: (metrics.sharpe_ratio || metrics.sharpeRatio || 0).toFixed(2), class: 'neutral' },
+            { label: 'Max Drawdown', value: `${(metrics.max_drawdown || metrics.maxDrawdown || 0).toFixed(2)}%`, class: 'negative' },
+            { label: 'Win Rate', value: `${(metrics.win_rate || metrics.winRate || 0).toFixed(1)}%`, class: 'neutral' },
+            { label: 'Total Trades', value: (metrics.total_trades || metrics.totalTrades || 0).toString(), class: 'neutral' },
+            { label: 'Final Capital', value: `$${(metrics.final_capital || metrics.finalCapital || 0).toLocaleString()}`, 
+              class: (metrics.final_capital || metrics.finalCapital || 0) >= (results.parameters?.initial_capital || results.initialCapital || 0) ? 'positive' : 'negative' },
+            { label: 'Volatility', value: `${(metrics.volatility || 0).toFixed(1)}%`, class: 'neutral' }
         ];
         
-        metricsGrid.innerHTML = metrics.map(metric => `
+        metricsGrid.innerHTML = metricCards.map(metric => `
             <div class="metric-card">
                 <div class="metric-label">${metric.label}</div>
                 <div class="metric-value ${metric.class}">${metric.value}</div>
@@ -658,13 +692,32 @@ document.addEventListener('DOMContentLoaded', function() {
             currentChart.destroy();
         }
         
+        // Handle both real backend data and simulated data
+        let dates, equityData, symbol, fastWindow, slowWindow;
+        
+        if (results.equity_curve) {
+            // Real backend data
+            dates = results.equity_curve.dates;
+            equityData = results.equity_curve.values;
+            symbol = results.symbol;
+            fastWindow = results.parameters?.fast_window || results.fast_window;
+            slowWindow = results.parameters?.slow_window || results.slow_window;
+        } else {
+            // Simulated data
+            dates = results.dates;
+            equityData = results.equityData;
+            symbol = results.symbol;
+            fastWindow = results.fastWindow;
+            slowWindow = results.slowWindow;
+        }
+        
         currentChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: results.dates,
+                labels: dates,
                 datasets: [{
                     label: 'Portfolio Value',
-                    data: results.equityData,
+                    data: equityData,
                     borderColor: '#6366f1',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     borderWidth: 2,
@@ -678,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     title: {
                         display: true,
-                        text: `${results.symbol} Moving Average Strategy (${results.fastWindow}/${results.slowWindow})`
+                        text: `${symbol} Moving Average Strategy (${fastWindow}/${slowWindow})`
                     },
                     legend: {
                         display: false
@@ -737,6 +790,51 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         tradesTable.innerHTML = tableHTML;
+    }
+    
+    function displayPlots(plots) {
+        // Add plots section if it doesn't exist
+        let plotsSection = document.getElementById('plots-section');
+        if (!plotsSection) {
+            plotsSection = document.createElement('div');
+            plotsSection.id = 'plots-section';
+            plotsSection.className = 'plots-section';
+            plotsSection.innerHTML = '<h4>Analysis Plots</h4><div class="plots-grid" id="plots-grid"></div>';
+            document.querySelector('.results-content').appendChild(plotsSection);
+        }
+        
+        const plotsGrid = document.getElementById('plots-grid');
+        plotsGrid.innerHTML = '';
+        
+        if (plots.equity) {
+            const equityDiv = document.createElement('div');
+            equityDiv.className = 'plot-container';
+            equityDiv.innerHTML = `
+                <h5>Equity Curve</h5>
+                <img src="data:image/png;base64,${plots.equity}" alt="Equity Curve" style="width: 100%; height: auto;">
+            `;
+            plotsGrid.appendChild(equityDiv);
+        }
+        
+        if (plots.drawdown) {
+            const drawdownDiv = document.createElement('div');
+            drawdownDiv.className = 'plot-container';
+            drawdownDiv.innerHTML = `
+                <h5>Drawdown Analysis</h5>
+                <img src="data:image/png;base64,${plots.drawdown}" alt="Drawdown Analysis" style="width: 100%; height: auto;">
+            `;
+            plotsGrid.appendChild(drawdownDiv);
+        }
+        
+        if (plots.price_signals) {
+            const priceDiv = document.createElement('div');
+            priceDiv.className = 'plot-container';
+            priceDiv.innerHTML = `
+                <h5>Price Action & Signals</h5>
+                <img src="data:image/png;base64,${plots.price_signals}" alt="Price Action & Signals" style="width: 100%; height: auto;">
+            `;
+            plotsGrid.appendChild(priceDiv);
+        }
     }
     
     function exportResults(results) {
