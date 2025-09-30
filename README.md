@@ -29,7 +29,7 @@ Designed and back-tested a moving-average crossover strategy on S&P 500 daily da
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/qbacktester.git
+git clone https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester.git
 cd qbacktester
 
 # Create virtual environment
@@ -44,7 +44,7 @@ pip install -e ".[dev]"
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/qbacktester.git
+git clone https://github.com/daryapylypenko/Quantitative-Trading-Strategy-Backtester.git
 cd qbacktester
 
 # Build the Docker image
