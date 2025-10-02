@@ -4,24 +4,25 @@ Core backtesting functionality.
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 
 class Strategy(ABC):
     """Abstract base class for trading strategies."""
-    
+
     def __init__(self, name: str) -> None:
         self.name = name
-    
+
     @abstractmethod
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Generate trading signals based on market data.
-        
+
         Args:
             data: DataFrame with OHLCV data
-            
+
         Returns:
             DataFrame with signals (1 for buy, -1 for sell, 0 for hold)
         """
@@ -30,7 +31,7 @@ class Strategy(ABC):
 
 class Backtester:
     """Main backtesting engine."""
-    
+
     def __init__(
         self,
         initial_capital: float = 100000.0,
@@ -41,7 +42,7 @@ class Backtester:
         self.commission = commission
         self.slippage = slippage
         self.portfolio = None
-        
+
     def run_backtest(
         self,
         strategy: Strategy,
@@ -51,13 +52,13 @@ class Backtester:
     ) -> Dict[str, Any]:
         """
         Run backtest for a given strategy and data.
-        
+
         Args:
             strategy: Trading strategy to backtest
             data: Market data (OHLCV)
             start_date: Start date for backtest
             end_date: End date for backtest
-            
+
         Returns:
             Dictionary with backtest results
         """
@@ -66,10 +67,10 @@ class Backtester:
             data = data[data.index >= start_date]
         if end_date:
             data = data[data.index <= end_date]
-            
+
         # Generate signals
         signals = strategy.generate_signals(data)
-        
+
         # TODO: Implement portfolio simulation
         # This is a placeholder implementation
         results = {
@@ -80,5 +81,5 @@ class Backtester:
             "win_rate": 0.0,
             "total_trades": 0,
         }
-        
+
         return results
