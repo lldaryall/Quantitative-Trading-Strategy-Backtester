@@ -30,7 +30,7 @@ class Portfolio:
             quantity * prices.get(symbol, 0)
             for symbol, quantity in self.positions.items()
         )
-        return self.cash + position_value
+        return float(self.cash + position_value)
 
     def execute_trade(
         self,

@@ -73,7 +73,7 @@ def cagr(equity_curve: pd.Series, periods_per_year: int = 252) -> float:
     years = n_periods / periods_per_year
     cagr_value = (end_value / start_value) ** (1 / years) - 1
 
-    return cagr_value
+    return float(cagr_value)
 
 
 def sharpe(
@@ -106,8 +106,8 @@ def sharpe(
     excess_returns = clean_returns - risk_free / periods_per_year
 
     # Calculate mean and standard deviation
-    mean_return = excess_returns.mean()
-    std_return = excess_returns.std()
+    mean_return = float(excess_returns.mean())
+    std_return = float(excess_returns.std())
 
     # Handle case where standard deviation is zero
     if std_return == 0:
@@ -116,7 +116,7 @@ def sharpe(
     # Annualize the Sharpe ratio
     sharpe_ratio = mean_return / std_return * np.sqrt(periods_per_year)
 
-    return sharpe_ratio
+    return float(sharpe_ratio)
 
 
 def max_drawdown(equity_curve: pd.Series) -> Tuple[float, pd.Timestamp, pd.Timestamp]:
@@ -222,7 +222,7 @@ def hit_rate(returns: pd.Series, threshold: float = 0.0) -> float:
     hits = (clean_returns > threshold).sum()
     total = len(clean_returns)
 
-    return hits / total
+    return float(hits / total)
 
 
 def avg_win_loss(returns: pd.Series) -> Tuple[float, float]:
@@ -285,7 +285,7 @@ def volatility(returns: pd.Series, periods_per_year: int = 252) -> float:
     # Calculate standard deviation and annualize
     vol = clean_returns.std() * np.sqrt(periods_per_year)
 
-    return vol
+    return float(vol)
 
 
 def sortino(
@@ -318,7 +318,7 @@ def sortino(
     excess_returns = clean_returns - risk_free / periods_per_year
 
     # Calculate mean return
-    mean_return = excess_returns.mean()
+    mean_return = float(excess_returns.mean())
 
     # Calculate downside deviation (only negative returns)
     downside_returns = excess_returns[excess_returns < 0]
@@ -326,7 +326,7 @@ def sortino(
     if len(downside_returns) == 0:
         return np.inf if mean_return > 0 else 0.0
 
-    downside_dev = downside_returns.std()
+    downside_dev = float(downside_returns.std())
 
     if downside_dev == 0:
         return 0.0 if mean_return == 0 else np.inf if mean_return > 0 else -np.inf
@@ -334,7 +334,7 @@ def sortino(
     # Annualize the Sortino ratio
     sortino_ratio = mean_return / downside_dev * np.sqrt(periods_per_year)
 
-    return sortino_ratio
+    return float(sortino_ratio)
 
 
 def var(returns: pd.Series, confidence_level: float = 0.05) -> float:
@@ -366,7 +366,7 @@ def var(returns: pd.Series, confidence_level: float = 0.05) -> float:
     # Calculate VaR as the percentile
     var_value = np.percentile(clean_returns, confidence_level * 100)
 
-    return var_value
+    return float(var_value)
 
 
 def cvar(returns: pd.Series, confidence_level: float = 0.05) -> float:
@@ -406,7 +406,7 @@ def cvar(returns: pd.Series, confidence_level: float = 0.05) -> float:
 
     cvar_value = tail_returns.mean()
 
-    return cvar_value
+    return float(cvar_value)
 
 
 def get_all_metrics(
